@@ -848,7 +848,7 @@ function sepgp:LootFrameItem_OnClick(button, data)
       this._hasExtraClicks = true
     end
   end
-  if LootSlotIsItem(slot) and quality >= 3 then
+  if LootSlotIsItem(slot) and quality >= 0 then
     local itemLink = GetLootSlotLink(slot)
     if (itemLink) then
       if button == "LeftButton" then
