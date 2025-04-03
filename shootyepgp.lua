@@ -14,7 +14,7 @@ sepgp.VARS = {
   minep = 0,
   baseaward_ep = 100,
   decay = 0.9,
-  max = 1000,
+  max = 10000,
   timeout = 60,
   minlevel = 55,
   maxloglines = 500,
@@ -30,9 +30,10 @@ sepgp.VARS = {
   osgp = "Offspec GP",
   bankde = "Bank-D/E",
   reminder = C:Red("Unassigned"),
+  min_quality = 3, -- 3: epic, 2: blue, 1: green, 0: white
 }
 sepgp.VARS.reservecall = string.format(
-L["{shootyepgp}Type \"+\" if on main, or \"+<YourMainName>\" (without quotes) if on alt within %dsec."],
+  L["{shootyepgp}Type \"+\" if on main, or \"+<YourMainName>\" (without quotes) if on alt within %dsec."],
   sepgp.VARS.timeout)
 sepgp._playerName = (UnitName("player"))
 local out = "|cff9664c8shootyepgp:|r %s"
@@ -485,7 +486,7 @@ function sepgp:OnEnable() -- PLAYER_LOGIN (2)
   end
 
   self:RegisterEvent("GUILD_ROSTER_UPDATE", function()
-    if (arg1) then   -- member join /leave
+    if (arg1) then -- member join /leave
       sepgp:SetRefresh(true)
     end
   end)
@@ -1602,8 +1603,10 @@ function sepgp:buildClassMemberTable(roster, epgp)
           sepgp:refreshPRTablets()
         end
       end
-      c[class].args[name].validate = function(v) return (type(v) == "number" or tonumber(v)) and
-        tonumber(v) < sepgp.VARS.max end
+      c[class].args[name].validate = function(v)
+        return (type(v) == "number" or tonumber(v)) and
+            tonumber(v) < sepgp.VARS.max
+      end
     end
   end
   return c
@@ -1735,7 +1738,7 @@ function sepgp:captureReserveChatter(text, sender, _, _, _, _, _, _, channel)
             table.insert(sepgp.reserves, { reserve, reserve_class, reserve_rank, reserve_alt })
           else
             self:defaultPrint(string.format(
-            L["|cffff0000%s|r trying to add %s to Reserves, but has already added a member. Discarding!"], reserve_alt,
+              L["|cffff0000%s|r trying to add %s to Reserves, but has already added a member. Discarding!"], reserve_alt,
               reserve))
           end
         else
@@ -1810,7 +1813,7 @@ function sepgp:captureLootCall(text, sender)
     end
     if (link_found) then
       local quality = hexColorQuality[itemColor] or -1
-      if (quality >= 3) then
+      if (quality >= sepgp.VARS.min_quality) then
         if (IsRaidLeader() or self:lootMaster()) and (sender == self._playerName) then
           self:clearBids(true)
           sepgp.bid_item.link = itemString
@@ -2110,7 +2113,7 @@ function sepgp:processLoot(player, itemLink, source)
     local class, _
     if player == YOU then player = self._playerName end
     if player == self._playerName then
-      class = UnitClass("player")                    -- localized
+      class = UnitClass("player")                     -- localized
     else
       _, class = self:verifyGuildMember(player, true) -- localized
     end
@@ -2120,9 +2123,16 @@ function sepgp:processLoot(player, itemLink, source)
     local off_price = math.floor(price * sepgp_discount)
     local quality = hexColorQuality[itemColor] or -1
     local timestamp = date("%b/%d %H:%M:%S")
-    local data = { [self.loot_index.time] = timestamp, [self.loot_index.player] = player, [self.loot_index.player_c] =
-    player_color, [self.loot_index.item] = itemLink, [self.loot_index.bind] = bind, [self.loot_index.price] = price,
-      [self.loot_index.off_price] = off_price }
+    local data = {
+      [self.loot_index.time] = timestamp,
+      [self.loot_index.player] = player,
+      [self.loot_index.player_c] =
+          player_color,
+      [self.loot_index.item] = itemLink,
+      [self.loot_index.bind] = bind,
+      [self.loot_index.price] = price,
+      [self.loot_index.off_price] = off_price
+    }
     local dialog = StaticPopup_Show("SHOOTY_EPGP_AUTO_GEARPOINTS", data[self.loot_index.player_c],
       data[self.loot_index.item], data)
     if (dialog) then
@@ -2185,8 +2195,13 @@ function sepgp:make_escable(framename, operation)
   end
 end
 
-local raidZones = { [L["Molten Core"]] = "T1", [L["Onyxia\'s Lair"]] = "T1.5", [L["Blackwing Lair"]] = "T2",
-  [L["Ahn\'Qiraj"]] = "T2.5", [L["Naxxramas"]] = "T3" }
+local raidZones = {
+  [L["Molten Core"]] = "T1",
+  [L["Onyxia\'s Lair"]] = "T1.5",
+  [L["Blackwing Lair"]] = "T2",
+  [L["Ahn\'Qiraj"]] = "T2.5",
+  [L["Naxxramas"]] = "T3"
+}
 local zone_multipliers = {
   ["T3"] = { ["T3"] = 1, ["T2.5"] = 0.75, ["T2"] = 0.5, ["T1.5"] = 0.25, ["T1"] = 0.25 },
   ["T2.5"] = { ["T3"] = 1, ["T2.5"] = 1, ["T2"] = 0.7, ["T1.5"] = 0.4, ["T1"] = 0.4 },
@@ -2288,7 +2303,7 @@ end
 -------------
 StaticPopupDialogs["SHOOTY_EPGP_CLEAR_LOOT"] = {
   text = L
-  ["There are %d loot drops stored. It is recommended to clear loot info before a new raid. Do you want to clear it now?"],
+      ["There are %d loot drops stored. It is recommended to clear loot info before a new raid. Do you want to clear it now?"],
   button1 = TEXT(YES),
   button2 = L["Show me"],
   OnAccept = function()
@@ -2299,7 +2314,7 @@ StaticPopupDialogs["SHOOTY_EPGP_CLEAR_LOOT"] = {
     if reason == "clicked" then
       sepgp_loot:Toggle(true)
       sepgp:defaultPrint(L
-      ["Loot info can be cleared at any time from the Tablet context menu or '/shooty clearloot' command"])
+        ["Loot info can be cleared at any time from the Tablet context menu or '/shooty clearloot' command"])
     end
   end,
   timeout = 0,
@@ -2351,7 +2366,7 @@ StaticPopupDialogs["SHOOTY_EPGP_RESERVE_AFKCHECK_RESPONCE"] = {
   OnUpdate = function(elapsed, dialog)
     this._timeout = this._timeout - elapsed
     getglobal(dialog:GetName() .. "Text"):SetText(string.format(
-    L["Reserves AFKCheck. Are you available? |cff00ff00%0d|rsec."], this._timeout))
+      L["Reserves AFKCheck. Are you available? |cff00ff00%0d|rsec."], this._timeout))
     if (this._timeout <= 0) then
       this._timeout = 0
       dialog:Hide()
@@ -2487,7 +2502,7 @@ StaticPopupDialogs["SHOOTY_EPGP_AUTO_GEARPOINTS"] = {
   end,
   OnShow = function()
     sepgp._menuFrame = sepgp._menuFrame or
-    CreateFrame("Frame", "sepgp_auto_gp_menuframe", UIParent, "UIDropDownMenuTemplate")
+        CreateFrame("Frame", "sepgp_auto_gp_menuframe", UIParent, "UIDropDownMenuTemplate")
   end,
   OnHide = function()
     CloseDropDownMenus()

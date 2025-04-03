@@ -26,9 +26,12 @@ function sepgp_logs:OnEnable()
         D:AddLine(
           "text", L["Clear"],
           "tooltipText", L["Clear Logs."],
-          "func", function() sepgp_log = {} sepgp_logs:Refresh() end
+          "func", function()
+            sepgp_log = {}
+            sepgp_logs:Refresh()
+          end
         )
-      end      
+      end
     )
   end
   if not T:IsAttached("sepgp_logs") then
@@ -46,28 +49,28 @@ end
 
 function sepgp_logs:setHideScript()
   local i = 1
-  local tablet = getglobal(string.format("Tablet20DetachedFrame%d",i))
-  while (tablet) and i<100 do
+  local tablet = getglobal(string.format("Tablet20DetachedFrame%d", i))
+  while (tablet) and i < 100 do
     if tablet.owner ~= nil and tablet.owner == "sepgp_logs" then
-      sepgp:make_escable(string.format("Tablet20DetachedFrame%d",i),"add")
-      tablet:SetScript("OnHide",nil)
-      tablet:SetScript("OnHide",function()
-          if not T:IsAttached("sepgp_logs") then
-            T:Attach("sepgp_logs")
-            this:SetScript("OnHide",nil)
-          end
-        end)
+      sepgp:make_escable(string.format("Tablet20DetachedFrame%d", i), "add")
+      tablet:SetScript("OnHide", nil)
+      tablet:SetScript("OnHide", function()
+        if not T:IsAttached("sepgp_logs") then
+          T:Attach("sepgp_logs")
+          this:SetScript("OnHide", nil)
+        end
+      end)
       break
-    end    
-    i = i+1
-    tablet = getglobal(string.format("Tablet20DetachedFrame%d",i))
-  end  
+    end
+    i = i + 1
+    tablet = getglobal(string.format("Tablet20DetachedFrame%d", i))
+  end
 end
 
 function sepgp_logs:Top()
   if T:IsRegistered("sepgp_logs") and (T.registry.sepgp_logs.tooltip) then
-    T.registry.sepgp_logs.tooltip.scroll=0
-  end  
+    T.registry.sepgp_logs.tooltip.scroll = 0
+  end
 end
 
 function sepgp_logs:Toggle(forceShow)
@@ -84,13 +87,13 @@ function sepgp_logs:Toggle(forceShow)
     else
       T:Attach("sepgp_logs") -- hide
     end
-  end  
+  end
 end
 
 function sepgp_logs:reverse(arr)
   CP:Recycle(sepgp_logs.tmp)
-  for _,val in ipairs(arr) do
-    table.insert(sepgp_logs.tmp,val)
+  for _, val in ipairs(arr) do
+    table.insert(sepgp_logs.tmp, val)
   end
   local i, j = 1, table.getn(sepgp_logs.tmp)
   while i < j do
@@ -108,10 +111,10 @@ end
 
 function sepgp_logs:OnTooltipUpdate()
   local cat = T:AddCategory(
-      "columns", 2,
-      "text",  C:Orange(L["Time"]),   "child_textR",    1, "child_textG",    1, "child_textB",    1, "child_justify",  "LEFT",
-      "text2", C:Orange(L["Action"]),     "child_text2R",   1, "child_text2G",   1, "child_text2B",   1, "child_justify2", "RIGHT"
-    )
+    "columns", 2,
+    "text", C:Orange(L["Time"]), "child_textR", 1, "child_textG", 1, "child_textB", 1, "child_justify", "LEFT",
+    "text2", C:Orange(L["Action"]), "child_text2R", 1, "child_text2G", 1, "child_text2B", 1, "child_justify2", "RIGHT"
+  )
   local t = sepgp_logs:BuildLogsTable()
   for i = 1, table.getn(t) do
     local timestamp, line = unpack(t[i])
@@ -119,7 +122,7 @@ function sepgp_logs:OnTooltipUpdate()
       "text", C:Silver(timestamp),
       "text2", line
     )
-  end  
+  end
 end
 
 -- GLOBALS: sepgp_saychannel,sepgp_groupbyclass,sepgp_groupbyarmor,sepgp_groupbyrole,sepgp_raidonly,sepgp_decay,sepgp_minep,sepgp_reservechannel,sepgp_main,sepgp_progress,sepgp_discount,sepgp_log,sepgp_dbver,sepgp_looted

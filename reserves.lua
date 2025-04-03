@@ -23,7 +23,7 @@ function sepgp_reserves:OnEnable()
           "tooltipText", L["Refresh window"],
           "func", function() sepgp_reserves:Refresh() end
         )
-      end      
+      end
     )
   end
   if not T:IsAttached("sepgp_reserves") then
@@ -41,28 +41,28 @@ end
 
 function sepgp_reserves:setHideScript()
   local i = 1
-  local tablet = getglobal(string.format("Tablet20DetachedFrame%d",i))
-  while (tablet) and i<100 do
+  local tablet = getglobal(string.format("Tablet20DetachedFrame%d", i))
+  while (tablet) and i < 100 do
     if tablet.owner ~= nil and tablet.owner == "sepgp_reserves" then
-      sepgp:make_escable(string.format("Tablet20DetachedFrame%d",i),"add")
-      tablet:SetScript("OnHide",nil)
-      tablet:SetScript("OnHide",function()
-          if not T:IsAttached("sepgp_reserves") then
-            T:Attach("sepgp_reserves")
-            this:SetScript("OnHide",nil)
-          end
-        end)
+      sepgp:make_escable(string.format("Tablet20DetachedFrame%d", i), "add")
+      tablet:SetScript("OnHide", nil)
+      tablet:SetScript("OnHide", function()
+        if not T:IsAttached("sepgp_reserves") then
+          T:Attach("sepgp_reserves")
+          this:SetScript("OnHide", nil)
+        end
+      end)
       break
-    end    
-    i = i+1
-    tablet = getglobal(string.format("Tablet20DetachedFrame%d",i))
-  end  
+    end
+    i = i + 1
+    tablet = getglobal(string.format("Tablet20DetachedFrame%d", i))
+  end
 end
 
 function sepgp_reserves:Top()
   if T:IsRegistered("sepgp_reserves") and (T.registry.sepgp_reserves.tooltip) then
-    T.registry.sepgp_reserves.tooltip.scroll=0
-  end  
+    T.registry.sepgp_reserves.tooltip.scroll = 0
+  end
 end
 
 function sepgp_reserves:Toggle(forceShow)
@@ -79,7 +79,7 @@ function sepgp_reserves:Toggle(forceShow)
     else
       T:Attach("sepgp_reserves") -- hide
     end
-  end  
+  end
 end
 
 function sepgp_reserves:OnClickItem(name)
@@ -88,27 +88,30 @@ end
 
 function sepgp_reserves:BuildReservesTable()
   --{name,class,rank,alt}
-  table.sort(sepgp.reserves, function(a,b)
-    if (a[2] ~= b[2]) then return a[2] > b[2]
-    else return a[1] > b[1] end
+  table.sort(sepgp.reserves, function(a, b)
+    if (a[2] ~= b[2]) then
+      return a[2] > b[2]
+    else
+      return a[1] > b[1]
+    end
   end)
   return sepgp.reserves
 end
 
 function sepgp_reserves:OnTooltipUpdate()
   local cdcat = T:AddCategory(
-      "columns", 2
-    )
+    "columns", 2
+  )
   cdcat:AddLine(
-      "text", C:Orange(L["Countdown"]),
-      "text2", sepgp.timer.cd_text
-    )
+    "text", C:Orange(L["Countdown"]),
+    "text2", sepgp.timer.cd_text
+  )
   local cat = T:AddCategory(
-      "columns", 3,
-      "text",  C:Orange(L["Name"]),   "child_textR",    1, "child_textG",    1, "child_textB",    1, "child_justify",  "LEFT",
-      "text2", C:Orange(L["Rank"]),     "child_text2R",   1, "child_text2G",   1, "child_text2B",   0, "child_justify2", "RIGHT",
-      "text3", C:Orange(L["OnAlt"]),  "child_text3R",   0, "child_text3G",   1, "child_text3B",   0, "child_justify3", "RIGHT"
-    )
+    "columns", 3,
+    "text", C:Orange(L["Name"]), "child_textR", 1, "child_textG", 1, "child_textB", 1, "child_justify", "LEFT",
+    "text2", C:Orange(L["Rank"]), "child_text2R", 1, "child_text2G", 1, "child_text2B", 0, "child_justify2", "RIGHT",
+    "text3", C:Orange(L["OnAlt"]), "child_text3R", 0, "child_text3G", 1, "child_text3B", 0, "child_justify3", "RIGHT"
+  )
   local t = self:BuildReservesTable()
   for i = 1, table.getn(t) do
     local name, class, rank, alt = unpack(t[i])
