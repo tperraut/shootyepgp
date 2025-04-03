@@ -41,5 +41,5 @@ Having the addon makes everything more convenient, but is not mandatory.
 [shootyepgp wiki](https://github.com/Road-block/shootyepgp/wiki)
 
 ## download
-- Release version: Download shootyepgp-x.y-11200.zip file from [latest](https://github.com/Road-block/shootyepgp/releases/latest) and extract to AddOns folder.
-- *Alpha version: Download shootyepgp-master.zip from [here](https://github.com/Road-block/shootyepgp/archive/master.zip) extract to AddOns folder and **remove** the -master suffix from the folder so it's just `shootyepgp`.*
+- Release version: Download shootyepgp-x.y-11200.zip file from [latest](https://github.com/tperraut/shootyepgp/releases/latest) and extract to AddOns folder.
+- *Alpha version: Download shootyepgp-master.zip from [here](https://github.com/tperraut/shootyepgp/archive/master.zip) extract to AddOns folder and **remove** the -master suffix from the folder so it's just `shootyepgp`.*
