@@ -30,7 +30,7 @@ sepgp.VARS = {
   osgp = "Offspec GP",
   bankde = "Bank-D/E",
   reminder = C:Red("Unassigned"),
-  min_quality = 3, -- 4: epic, 3: blue, 2: green, 1: white
+  min_quality = 4, -- 4: epic, 3: blue, 2: green, 1: white
 }
 sepgp.VARS.reservecall = string.format(
   L["{shootyepgp}Type \"+\" if on main, or \"+<YourMainName>\" (without quotes) if on alt within %dsec."],
