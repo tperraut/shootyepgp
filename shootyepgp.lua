@@ -30,7 +30,7 @@ sepgp.VARS = {
   osgp = "Offspec GP",
   bankde = "Bank-D/E",
   reminder = C:Red("Unassigned"),
-  min_quality = 3, -- 3: epic, 2: blue, 1: green, 0: white
+  min_quality = 3, -- 4: epic, 3: blue, 2: green, 1: white
 }
 sepgp.VARS.reservecall = string.format(
   L["{shootyepgp}Type \"+\" if on main, or \"+<YourMainName>\" (without quotes) if on alt within %dsec."],
@@ -47,8 +47,10 @@ local partyUnit, raidUnit = {}, {}
 local hexColorQuality = {}
 local reserves_blacklist, bids_blacklist = {}, {}
 local bidlink = {
-  ["ms"] = L["|cffFF3333|Hshootybid:1:$ML|h[Mainspec/NEED]|h|r"],
-  ["os"] = L["|cff009900|Hshootybid:2:$ML|h[Offspec/GREED]|h|r"]
+  ["ms_min"] = L["|cffFFF533|Hshootybid:1:$ML|h[MS/MIN]|h|r"],
+  ["ms_need"] = L["|cffFFa733|Hshootybid:2:$ML|h[MS/NEED]|h|r"],
+  ["ms_allin"] = L["|cffFF3333|Hshootybid:3:$ML|h[MS/ALLIN]|h|r"],
+  ["os"] = L["|cff009900|Hshootybid:4:$ML|h[OS/GREED]|h|r"]
 }
 local options
 do
@@ -62,6 +64,7 @@ do
     hexColorQuality[ITEM_QUALITY_COLORS[i].hex] = i
   end
 end
+sepgp.hexColorQuality = hexColorQuality
 local admincmd, membercmd = {
       type = "group",
       handler = sepgp,
@@ -195,7 +198,7 @@ sepgp.cmdtable = function()
   end
 end
 sepgp.reserves = {}
-sepgp.bids_main, sepgp.bids_off, sepgp.bid_item = {}, {}, {}
+sepgp.bids_main_min, sepgp.bids_main_need, sepgp.bids_main_allin, sepgp.bids_off, sepgp.bid_item = {}, {}, {}, {}, {}
 sepgp.timer = CreateFrame("Frame")
 sepgp.timer.cd_text = ""
 sepgp.timer:Hide()
@@ -461,7 +464,7 @@ function sepgp:OnInitialize() -- ADDON_LOADED (1) unless LoD
   if sepgp_decay == nil then sepgp_decay = sepgp.VARS.decay end
   if sepgp_minep == nil then sepgp_minep = sepgp.VARS.minep end
   if sepgp_progress == nil then sepgp_progress = "T1" end
-  if sepgp_discount == nil then sepgp_discount = 0.25 end
+  if sepgp_discount == nil then sepgp_discount = 0.0 end
   if sepgp_altspool == nil then sepgp_altspool = false end
   if sepgp_altpercent == nil then sepgp_altpercent = 1.0 end
   if sepgp_log == nil then sepgp_log = {} end
@@ -702,13 +705,13 @@ function sepgp:delayedInit()
 end
 
 function sepgp:AddDataToTooltip(tooltip, itemlink, itemstring, is_master)
-  local price
-  if (itemstring) then
-    price = sepgp_prices:GetPrice(itemstring, sepgp_progress)
-  elseif (itemlink) then
-    price = sepgp_prices:GetPrice(itemlink, sepgp_progress)
+  local price_allin, price_need, price_min, price_os
+  if (itemlink) then
+    price_allin, price_need, price_min, price_os = sepgp_prices:GetPrice(itemlink, sepgp_progress, true)
+  elseif (itemstring) then
+    price_allin, price_need, price_min, price_os = sepgp_prices:GetPrice(itemstring, sepgp_progress)
   end
-  if not price then return end
+  if not price_allin then return end
   local line_limit, left1, right1
   if (is_master) then
     line_limit = 27
@@ -717,12 +720,17 @@ function sepgp:AddDataToTooltip(tooltip, itemlink, itemstring, is_master)
     line_limit = 28
   end
   local ep, gp = (self:get_ep_v3(self._playerName) or 0), (self:get_gp_v3(self._playerName) or sepgp.VARS.basegp)
-  local off_price = math.floor(price * sepgp_discount)
-  local pr, new_pr, new_pr_off = ep / gp, ep / (gp + price), ep / (gp + off_price)
-  local pr_delta = new_pr - pr
+  local off_price = price_os
+  local pr, new_pr_all_in, new_pr_need, new_pr_min, new_pr_off = ep / gp, ep / (gp + price_allin), ep / (gp + price_need), ep / (gp + price_min), ep / (gp + off_price)
+  local pr_delta_allin = new_pr_all_in - pr
+  local pr_delta_need = new_pr_need - pr
+  local pr_delta_min = new_pr_min - pr
   local pr_delta_off = new_pr_off - pr
-  local textRight = string.format(L["gp:|cff32cd32%d|r gp_os:|cff20b2aa%d|r"], price, off_price)
-  local textRight2 = string.format(L["pr:|cffff0000%.02f|r(%.02f) pr_os:|cffff0000%.02f|r(%.02f)"], pr_delta, new_pr,
+  local textRight = string.format(L["allin:|cff32cd32%d|r need:|cff32cd32%d|r min:|cff32cd32%d|r gp_os:|cff20b2aa%d|r"], price_allin, price_need, price_min, off_price)
+  local textRight2 = string.format(L["PR: allin:|cffff0000%.02f|r(%.02f) need:|cffff0000%.02f|r(%.02f) min:|cffff0000%.02f|r(%.02f) os:|cffff0000%.02f|r(%.02f)"],
+  pr_delta_allin, new_pr_all_in,
+  pr_delta_need, new_pr_need,
+  pr_delta_min, new_pr_min,
     pr_delta_off, new_pr_off)
   if (tooltip:NumLines() < line_limit) then
     tooltip:AddLine(" ")
@@ -803,8 +811,12 @@ function sepgp:SetItemRef(link, name, button)
   if string.sub(link, 1, 9) == "shootybid" then
     local _, _, bid, masterlooter = string.find(link, "shootybid:(%d+):(%w+)")
     if bid == "1" then
-      bid = "+"
+      bid = "MIN"
     elseif bid == "2" then
+      bid = "NEED"
+    elseif bid == "3" then
+      bid = "ALLIN"
+    elseif bid == "4" then
       bid = "-"
     else
       bid = nil
@@ -849,15 +861,15 @@ function sepgp:LootFrameItem_OnClick(button, data)
       this._hasExtraClicks = true
     end
   end
-  if LootSlotIsItem(slot) and quality >= 0 then
+  if LootSlotIsItem(slot) and quality >= sepgp.VARS.min_quality then
     local itemLink = GetLootSlotLink(slot)
     if (itemLink) then
       if button == "LeftButton" then
-        self:widestAudience(string.format(L["Whisper %s a + for %s (mainspec)"], sepgp._playerName, itemLink))
+        self:widestAudience(string.format(L["Whisper %s a +MIN, +NEED, +ALLIN for %s (mainspec)"], sepgp._playerName, itemLink))
       elseif button == "RightButton" then
         self:widestAudience(string.format(L["Whisper %s a - for %s (offspec)"], sepgp._playerName, itemLink))
       elseif button == "MiddleButton" then
-        self:widestAudience(string.format(L["Whisper %s a + or - for %s (mainspec or offspec)"], sepgp._playerName,
+        self:widestAudience(string.format(L["Whisper %s a +MIN, +NEED, +ALLIN or - for %s (mainspec or offspec)"], sepgp._playerName,
           itemLink))
       end
     end
@@ -888,13 +900,13 @@ function sepgp:ContainerFrameItemButton_OnClick(button, ignoreModifiers)
       local bind = self:itemBinding(itemString) or ""
       if (bind == self.VARS.boe) then
         if button == "LeftButton" then
-          self:widestAudience(string.format(L["Whisper %s a + for %s (mainspec)"], sepgp._playerName, itemLink))
+          self:widestAudience(string.format(L["Whisper %s a +MIN, +NEED, +ALLIN for %s (mainspec)"], sepgp._playerName, itemLink))
           return
         elseif button == "RightButton" then
           self:widestAudience(string.format(L["Whisper %s a - for %s (offspec)"], sepgp._playerName, itemLink))
           return
         elseif button == "MiddleButton" then
-          self:widestAudience(string.format(L["Whisper %s a + or - for %s (mainspec or offspec)"], sepgp._playerName,
+          self:widestAudience(string.format(L["Whisper %s a +MIN, +NEED, +ALLIN or - for %s (mainspec or offspec)"], sepgp._playerName,
             itemLink))
           return
         end
@@ -945,20 +957,28 @@ function sepgp:defaultPrint(msg)
 end
 
 function sepgp:bidPrint(link, masterlooter, need, greed, bid)
-  local mslink = string.gsub(bidlink["ms"], "$ML", masterlooter)
+  local ms_min_link = string.gsub(bidlink["ms_min"], "$ML", masterlooter)
+  local ms_need_link = string.gsub(bidlink["ms_need"], "$ML", masterlooter)
+  local ms_allin_link = string.gsub(bidlink["ms_allin"], "$ML", masterlooter)
   local oslink = string.gsub(bidlink["os"], "$ML", masterlooter)
-  local msg = string.format(L["Click $MS or $OS for %s"], link)
+  local msg = string.format(L["Click $MS_MIN or $MS_NEED or $MS_ALLIN or $OS for %s"], link)
   if (need and greed) then
-    msg = string.gsub(msg, "$MS", mslink)
+    msg = string.gsub(msg, "$MS_MIN", ms_min_link)
+    msg = string.gsub(msg, "$MS_NEED", ms_need_link)
+    msg = string.gsub(msg, "$MS_ALLIN", ms_allin_link)
     msg = string.gsub(msg, "$OS", oslink)
   elseif (need) then
-    msg = string.gsub(msg, "$MS", mslink)
+    msg = string.gsub(msg, "$MS_MIN", ms_min_link)
+    msg = string.gsub(msg, "$MS_NEED", ms_need_link)
+    msg = string.gsub(msg, "$MS_ALLIN", ms_allin_link)
     msg = string.gsub(msg, L["or $OS "], "")
   elseif (greed) then
     msg = string.gsub(msg, "$OS", oslink)
     msg = string.gsub(msg, L["$MS or "], "")
   elseif (bid) then
-    msg = string.gsub(msg, "$MS", mslink)
+    msg = string.gsub(msg, "$MS_MIN", ms_min_link)
+    msg = string.gsub(msg, "$MS_NEED", ms_need_link)
+    msg = string.gsub(msg, "$MS_ALLIN", ms_allin_link)
     msg = string.gsub(msg, "$OS", oslink)
   end
   local _, count = string.gsub(msg, "%$", "%$")
@@ -1832,17 +1852,41 @@ end
 
 -- TODO: HERE HANDLE +5 +15 +45
 local lootBid = {}
-lootBid.ms = { "(%+)", ".+(%+).*", ".*(%+).+", ".*(%+).*", "(ms)", "(need)" }
+lootBid.ms_min = { "(%+)[mM][iI][nN]", ".+(%+)[mM][iI][nN].*", ".*(%+)[mM][iI][nN].+", ".*(%+)[mM][iI][nN].*", "([mM][iI][nN])"}
+lootBid.ms_need = { "(%+)[nN][eE][eE][dD]", ".+(%+)[nN][eE][eE][dD].*", ".*(%+)[nN][eE][eE][dD].+", ".*(%+)[nN][eE][eE][dD].*", "([nN][eE][eE][dD])" }
+lootBid.ms_allin = { "(%+)[aA][lL][lL][iI][nN]", ".+(%+)[aA][lL][lL][iI][nN].*", ".*(%+)[aA][lL][lL][iI][nN].+", ".*(%+)[aA][lL][lL][iI][nN].*", "([aA][lL][lL][iI][nN])" }
 lootBid.os = { "(%-)", ".+(%-).*", ".*(%-).+", ".*(%-).*", "(os)", "(greed)" }
+local bid_min, bid_need, bid_allin = "min", "need", "allin"
+local bid_values = { [bid_min] = 5, [bid_need] = 15, [bid_allin] = 45 }
 function sepgp:captureBid(text, sender)
   if not (running_bid) then return end
   if not (IsRaidLeader() or self:lootMaster()) then return end
   if not sepgp.bid_item.link then return end
   local mskw_found, oskw_found
+  local ms_bid
   local lowtext = string.lower(text)
-  for _, f in ipairs(lootBid.ms) do
+  for _, f in ipairs(lootBid.ms_min) do
     mskw_found = string.find(text, f)
+    if (mskw_found) then
+      ms_bid = bid_min
+      break
+    end
+  end
+  for _, f in ipairs(lootBid.ms_need) do
     if (mskw_found) then break end
+    mskw_found = string.find(text, f)
+    if (mskw_found) then
+      ms_bid = bid_need
+      break
+    end
+  end
+  for _, f in ipairs(lootBid.ms_allin) do
+    if (mskw_found) then break end
+    mskw_found = string.find(text, f)
+    if (mskw_found) then
+      ms_bid = bid_allin
+      break
+    end
   end
   for _, f in ipairs(lootBid.os) do
     oskw_found = string.find(text, f)
@@ -1867,10 +1911,11 @@ function sepgp:captureBid(text, sender)
             end
             if (mskw_found) then
               bids_blacklist[sender] = true
+              local table_key = "bids_main_" .. ms_bid
               if (sepgp_altspool) and (main_name) then
-                table.insert(sepgp.bids_main, { name, class, ep, gp, ep / gp, main_name })
+                table.insert(sepgp[table_key], { name, class, ep, gp, ep / gp, main_name, ms_bid, bid_values[ms_bid] })
               else
-                table.insert(sepgp.bids_main, { name, class, ep, gp, ep / gp })
+                table.insert(sepgp[table_key], { name, class, ep, gp, ep / gp, "", ms_bid, bid_values[ms_bid] })
               end
             elseif (oskw_found) then
               bids_blacklist[sender] = true
@@ -1894,7 +1939,9 @@ function sepgp:clearBids(reset)
     self:debugPrint(L["Clearing old Bids"])
   end
   sepgp.bid_item = {}
-  sepgp.bids_main = {}
+  sepgp.bids_main_min = {}
+  sepgp.bids_main_need = {}
+  sepgp.bids_main_allin = {}
   sepgp.bids_off = {}
   bids_blacklist = {}
   if self:IsEventScheduled("shootyepgpBidTimeout") then
@@ -1975,7 +2022,7 @@ function sepgp:tradeLoot(playerState, targetState)
     if (itemLink) then
       local link_found, _, itemColor, itemString, itemName = string.find(itemLink, "^(|c%x+)|H(.+)|h(%[.+%])")
       if (link_found) then
-        local price = sepgp_prices:GetPrice(itemString, sepgp_progress)
+        local price = sepgp_prices:GetPrice(itemLink, sepgp_progress, true)
         if not (price) or price == 0 then
           return
         end
@@ -2106,7 +2153,7 @@ function sepgp:processLoot(player, itemLink, source)
     end
     local bind = self:itemBinding(itemString)
     if not (bind) then return end
-    local price = sepgp_prices:GetPrice(itemString, sepgp_progress)
+    local price = sepgp_prices:GetPrice(itemLink, sepgp_progress, true)
     if (not (price)) or (price == 0) then
       return
     end

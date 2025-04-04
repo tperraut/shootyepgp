@@ -786,10 +786,18 @@ end
 
 sepgp_prices = sepgp:NewModule("sepgp_prices", "AceDB-2.0")
 
-function sepgp_prices:GetPrice(item, progress)
-  -- TODO : return 45 15 5 OS
+function sepgp_prices:GetPrice(item, progress, is_link)
+  local quality
+  if is_link then
+    local _, _, itemColor = string.find(item, "^(|c%x+)|H(.+)|h(%[.+%])")
+    quality = sepgp.hexColorQuality[itemColor] or -1
+  end
 
-  return 45
+  if quality ~= nil and quality < sepgp.VARS.min_quality then
+    return nil
+  end
+
+  return 45, 15, 5, 0
 end
 
 --   if not progress then progress = "T3" end
