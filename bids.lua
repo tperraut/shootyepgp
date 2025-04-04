@@ -153,10 +153,10 @@ function sepgp_bids:BuildBidsTable()
   return sepgp.bids_main_min, sepgp.bids_main_need, sepgp.bids_main_allin, sepgp.bids_off
 end
 
-function sepgp_bids:CreateBidCat(bid)
+function sepgp_bids:CreateBidCat(cat)
   local maincatHeader = T:AddCategory(
     "columns", 1,
-    "text", C:Gold(string.format("MainSpec %s Bids", bid))
+    "text", cat
   ):AddLine("text", "")
   local maincat = T:AddCategory(
     "columns", 6,
@@ -171,7 +171,7 @@ function sepgp_bids:CreateBidCat(bid)
   return maincat
 end
 
-function sepgp_bids:Addlines(cat, data)
+function sepgp_bids:Addlines(cat, data, ep_median)
   for i = 1, table.getn(data) do
     local name, class, ep, gp, pr, main, bid, bid_value = unpack(data[i])
     local namedesc
@@ -187,6 +187,9 @@ function sepgp_bids:Addlines(cat, data)
     else
       text2 = string.format("%.4g", ep)
       text4 = string.format("%.4g", pr)
+    end
+    if ep_median and ep < ep_median then
+      text2 = C:Red(text2)
     end
     local bid_str = string.format("%s (%d)", string.upper(bid), bid_value)
     cat:AddLine(
@@ -205,28 +208,25 @@ function sepgp_bids:OnTooltipUpdate()
   if not (sepgp.bid_item and sepgp.bid_item.link) then return end
   local link = sepgp.bid_item.link
   local itemName = sepgp.bid_item.name
-  local price = sepgp_prices:GetPrice(link, sepgp_progress)
-  local offspec
-  if not price then
-    price = "<n/a>"
-    offspec = "<n/a>"
-  else
-    offspec = math.floor(price * sepgp_discount)
-  end
+  local price_allin, price_need, price_min, price_os = sepgp_prices:GetPrice(link, sepgp_progress)
   local bidcat = T:AddCategory(
-    "columns", 3,
+    "columns", 5,
     "text", C:Orange("Bid Item"), "child_textR", 1, "child_textG", 1, "child_textB", 1, "child_justify", "LEFT",
-    "text2", C:Orange("GP Cost"), "child_text2R", 50 / 255, "child_text2G", 205 / 255, "child_text2B", 50 / 255,
-    "child_justify2", "RIGHT",
-    "text3", C:Orange("OffSpec"), "child_text3R", 32 / 255, "child_text3G", 178 / 255, "child_text3B", 170 / 255,
-    "child_justify3", "RIGHT",
+    "text2", C:Orange("Allin Cost"), "child_text2R", 50 / 255, "child_text2G", 205 / 255, "child_text2B", 50 / 255, "child_justify4", "RIGHT",
+    "text3", C:Orange("Need Cost"), "child_text2R", 50 / 255, "child_text2G", 205 / 255, "child_text2B", 50 / 255, "child_justify4", "RIGHT",
+    "text4", C:Orange("Min Cost"), "child_text2R", 50 / 255, "child_text2G", 205 / 255, "child_text2B", 50 / 255, "child_justify4", "RIGHT",
+    "text5", C:Orange("OffSpec"), "child_text3R", 32 / 255, "child_text3G", 178 / 255, "child_text3B", 170 / 255,
+    "child_justify5", "RIGHT",
     "hideBlankLine", true
   )
   bidcat:AddLine(
     "text", itemName,
-    "text2", price,
-    "text3", offspec
+    "text2", price_allin,
+    "text3", price_need,
+    "text4", price_min,
+    "text5", price_os
   )
+
   local countdownHeader = T:AddCategory(
     "columns", 2,
     "text", "", "child_textR", 1, "child_textG", 1, "child_textB", 1, "child_justify", "LEFT",
@@ -238,26 +238,42 @@ function sepgp_bids:OnTooltipUpdate()
     "text2", self._counterText,
     "func", "bidCountdown", "arg1", self
   )
+
+  local raid_table = sepgp_standings:BuildStandingsTable(true)
+  local ep_median = sepgp:calculateMedian(raid_table, 4)
+  local mediancat = T:AddCategory(
+    "columns", 4,
+    "text", C:Orange(L["Median"]), "child_justify", "LEFT",
+    "text2", C:Orange("EP"), "child_justify2", "RIGHT",
+    "text3", C:Orange("GP"), "child_justify3", "RIGHT",
+    "text4", C:Orange("PR"), "child_justify4", "RIGHT"
+  ):AddLine(
+    "text", "",
+    "text2", C:White(string.format("%d", ep_median)),
+    "text3", C:White(string.format("%d", sepgp:calculateMedian(raid_table, 5))),
+    "text4", C:White(string.format("%.4g", sepgp:calculateMedian(raid_table, 6)))
+  )
+
   local tm_min, tm_need, tm_allin = self:BuildBidsTable()
 
-  local maincat_all_in = self:CreateBidCat("ALLIN")
-  self:Addlines(maincat_all_in, tm_allin)
-  local maincat_need = self:CreateBidCat("NEED")
+  local maincat_all_in = self:CreateBidCat(C:Red(string.format("MainSpec %s Bids", "ALLIN")))
+  self:Addlines(maincat_all_in, tm_allin, ep_median)
+  local maincat_need = self:CreateBidCat(C:Orange(string.format("MainSpec %s Bids", "NEED")))
   self:Addlines(maincat_need, tm_need)
-  local maincat_min = self:CreateBidCat("MIN")
+  local maincat_min = self:CreateBidCat(C:Yellow(string.format("MainSpec %s Bids", "MIN")))
   self:Addlines(maincat_min, tm_min)
 
 
   local offcatHeader = T:AddCategory(
     "columns", 1,
-    "text", C:Silver("OffSpec Bids")
+    "text", C:Green("OffSpec Bids")
   ):AddLine("text", "")
   local offcat = T:AddCategory(
     "columns", 5,
     "text", C:Orange("Name"), "child_textR", 1, "child_textG", 1, "child_textB", 1, "child_justify", "LEFT",
-    "text2", C:Orange("ep"), "child_text2R", 1, "child_text2G", 1, "child_text2B", 1, "child_justify2", "RIGHT",
-    "text3", C:Orange("gp"), "child_text3R", 1, "child_text3G", 1, "child_text3B", 1, "child_justify3", "RIGHT",
-    "text4", C:Orange("pr"), "child_text4R", 1, "child_text4G", 1, "child_text4B", 0, "child_justify4", "RIGHT",
+    "text2", C:Orange("EP"), "child_text2R", 1, "child_text2G", 1, "child_text2B", 1, "child_justify2", "RIGHT",
+    "text3", C:Orange("GP"), "child_text3R", 1, "child_text3G", 1, "child_text3B", 1, "child_justify3", "RIGHT",
+    "text4", C:Orange("PR"), "child_text4R", 1, "child_text4G", 1, "child_text4B", 0, "child_justify4", "RIGHT",
     "text5", C:Orange("Main"), "child_text5R", 1, "child_text5G", 1, "child_text5B", 0, "child_justify5", "RIGHT",
     "hideBlankLine", true
   )

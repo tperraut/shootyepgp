@@ -600,6 +600,29 @@ function sepgp:OnMenuRequest()
   D:FeedAceOptionsTable(self._options)
 end
 
+function sepgp:calculateMedian(ep_table, index)
+  if not ep_table then
+    return 0
+  end
+  local t_len = table.getn(ep_table)
+  if t_len == 0 then
+    return 0
+  end
+
+  table.sort(ep_table, function(a, b)
+    return a[index] > b[index]
+  end)
+
+  if mod(t_len, 2) == 1 then
+    local v = ep_table[math.floor(t_len / 2 + 0.5)][index]
+    return v
+  else
+    local v1 = ep_table[t_len / 2][index]
+    local v2 = ep_table[t_len / 2 + 1][index]
+    return (v1 + v2) / 2
+  end
+end
+
 function sepgp:TipHook()
   self:SecureHook(GameTooltip, "SetHyperlink", function(this, itemstring)
     sepgp:AddDataToTooltip(GameTooltip, nil, itemstring)

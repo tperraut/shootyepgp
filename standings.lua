@@ -371,10 +371,11 @@ end
 -- Builds a standings table with record:
 -- name, class, armor_class, roles, EP, GP, PR
 -- and sorted by PR
-function sepgp_standings:BuildStandingsTable()
+function sepgp_standings:BuildStandingsTable(raid_only)
   local t = {}
   local r = {}
-  if (sepgp_raidonly) and GetNumRaidMembers() > 0 then
+  local only_raid = sepgp_raidonly or raid_only
+  if (only_raid) and GetNumRaidMembers() > 0 then
     for i = 1, GetNumRaidMembers(true) do
       local name, rank, subgroup, level, class, fileName, zone, online, isDead = GetRaidRosterInfo(i)
       r[name] = true
@@ -399,7 +400,7 @@ function sepgp_standings:BuildStandingsTable()
     end
     local armor_class = self:getArmorClass(class)
     if ep > 0 then
-      if (sepgp_raidonly) and next(r) then
+      if (only_raid) and next(r) then
         if r[name] then
           table.insert(t, { name, class, armor_class, ep, gp, ep / gp })
         end
@@ -439,28 +440,6 @@ function sepgp_standings:BuildStandingsTable()
   return t
 end
 
-local calculate_median = function (ep_table, index)
-  if not ep_table then
-    return 0
-  end
-  local t_len = table.getn(ep_table)
-  if t_len == 0 then
-    return 0
-  end
-
-  table.sort(ep_table, function(a, b)
-    return a[index] > b[index]
-  end)
-
-  if mod(t_len, 2) == 1 then
-    local v = ep_table[math.floor(t_len / 2 + 0.5)][index]
-    return v
-  else
-    local v1 = ep_table[t_len / 2][index]
-    local v2 = ep_table[t_len / 2 + 1][index]
-    return (v1 + v2) / 2
-  end
-end
 
 function sepgp_standings:OnTooltipUpdate()
   local t = self:BuildStandingsTable()
@@ -468,9 +447,9 @@ function sepgp_standings:OnTooltipUpdate()
   local medianCat = T:AddCategory(
     "columns", 4,
     "text", C:Gold(L["Median"]), "child_justify", "LEFT",
-    "text2", C:White(string.format("%d", calculate_median(t, 4))), "child_justify2", "RIGHT",
-    "text3", C:White(string.format("%d", calculate_median(t, 5))), "child_justify3", "RIGHT",
-    "text4", C:White(string.format("%.4g", calculate_median(t, 6))), "child_justify4", "RIGHT"
+    "text2", C:White(string.format("%d", sepgp:calculateMedian(t, 4))), "child_justify2", "RIGHT",
+    "text3", C:White(string.format("%d", sepgp:calculateMedian(t, 5))), "child_justify3", "RIGHT",
+    "text4", C:White(string.format("%.4g", sepgp:calculateMedian(t, 6))), "child_justify4", "RIGHT"
   )
 
   medianCat:AddLine(
