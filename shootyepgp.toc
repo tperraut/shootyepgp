@@ -1,4 +1,4 @@
-## Interface: 12200
+## Interface: 12300
 ## Title: shootyepgp
 ## Notes: Effort Points/Gear Points Loot System
 ## Author: Tperraut
