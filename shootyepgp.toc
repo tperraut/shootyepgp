@@ -1,5 +1,5 @@
 ## Interface: 11200
-## Title: shootyepgp
+## Title: |cFFFF8080Koudoux|r shootyepgp |cffabd473Turtle-WoW|r
 ## Notes: Effort Points/Gear Points Loot System
 ## Author: Tperraut
 ## X-Website: https://github.com/tperraut/shootyepgp/releases/latest
