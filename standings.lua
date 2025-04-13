@@ -383,7 +383,7 @@ function sepgp_standings:BuildStandingsTable(raid_only)
   end
   sepgp.alts = {}
   for i = 1, GetNumGuildMembers(1) do
-    local name, _, _, _, class, _, note, officernote, _, _ = GetGuildRosterInfo(i)
+    local name, rankName, _, _, class, _, note, officernote, _, _ = GetGuildRosterInfo(i)
     local ep = (sepgp:get_ep_v3(name, officernote) or 0)
     local gp = (sepgp:get_gp_v3(name, officernote) or sepgp.VARS.basegp)
     local main, main_class, main_rank = sepgp:parseAlt(name, officernote)
@@ -402,10 +402,10 @@ function sepgp_standings:BuildStandingsTable(raid_only)
     if ep > 0 then
       if (only_raid) and next(r) then
         if r[name] then
-          table.insert(t, { name, class, armor_class, ep, gp, ep / gp })
+          table.insert(t, { name, class, armor_class, ep, gp, ep / gp , rankName})
         end
       else
-        table.insert(t, { name, class, armor_class, ep, gp, ep / gp })
+        table.insert(t, { name, class, armor_class, ep, gp, ep / gp, rankName })
       end
     end
   end
@@ -467,7 +467,7 @@ function sepgp_standings:OnTooltipUpdate()
   )
   local separator
   for i = 1, table.getn(t) do
-    local name, class, armor_class, ep, gp, pr = unpack(t[i])
+    local name, class, armor_class, ep, gp, pr, rank = unpack(t[i])
     if (sepgp_groupbyarmor) or (sepgp_groupbyrole) then
       if not (separator) then
         if (sepgp_groupbyarmor) then
@@ -500,7 +500,7 @@ function sepgp_standings:OnTooltipUpdate()
         end
       end
     end
-    local text = C:Colorize(BC:GetHexColor(class), name)
+    local text = C:Colorize(BC:GetHexColor(class), name) .. " (" .. rank .. ")"
     local text2, text4
     if sepgp_minep > 0 and ep < sepgp_minep then
       text2 = C:Red(string.format("%.4g", ep))
