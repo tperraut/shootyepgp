@@ -171,7 +171,7 @@ function sepgp_bids:CreateBidCat(cat)
   return maincat
 end
 
-function sepgp_bids:Addlines(cat, data, ep_median)
+function sepgp_bids:Addlines(cat, data, ep_median, pr_median)
   for i = 1, table.getn(data) do
     local name, class, ep, gp, pr, main, bid, bid_value = unpack(data[i])
     local namedesc
@@ -187,6 +187,9 @@ function sepgp_bids:Addlines(cat, data, ep_median)
     end
     if ep_median and ep < ep_median then
       text2 = C:Red(text2)
+    end
+    if pr_median and pr < pr_median then
+      text4 = C:Red(text4)
     end
     local bid_str = string.format("%s (%d)", string.upper(bid), bid_value)
     cat:AddLine(
@@ -238,6 +241,7 @@ function sepgp_bids:OnTooltipUpdate()
 
   local raid_table = sepgp_standings:BuildStandingsTable(true)
   local ep_median = sepgp:calculateMedian(raid_table, 4)
+  local pr_median = sepgp:calculateMedian(raid_table, 6)
   local mediancat = T:AddCategory(
     "columns", 4,
     "text", C:Orange(L["Median"]), "child_justify", "LEFT",
@@ -254,7 +258,7 @@ function sepgp_bids:OnTooltipUpdate()
   local tm_min, tm_need, tm_allin = self:BuildBidsTable()
 
   local maincat_all_in = self:CreateBidCat(C:Red(string.format("MainSpec %s Bids", "ALLIN")))
-  self:Addlines(maincat_all_in, tm_allin, ep_median)
+  self:Addlines(maincat_all_in, tm_allin, ep_median, pr_median)
   local maincat_need = self:CreateBidCat(C:Orange(string.format("MainSpec %s Bids", "NEED")))
   self:Addlines(maincat_need, tm_need)
   local maincat_min = self:CreateBidCat(C:Yellow(string.format("MainSpec %s Bids", "MIN")))
