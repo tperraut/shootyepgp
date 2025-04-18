@@ -175,8 +175,7 @@ function sepgp_bids:Addlines(cat, data, ep_median, pr_median)
   for i = 1, table.getn(data) do
     local name, class, ep, gp, pr, main, bid, bid_value = unpack(data[i])
     local namedesc
-    local _, grade = GetGuildInfo(name)
-    namedesc = string.format("%s(%s)", C:Colorize(BC:GetHexColor(class), name), grade)
+    namedesc = string.format("%s", C:Colorize(BC:GetHexColor(class), name))
     local text2, text4
     if sepgp_minep > 0 and ep < sepgp_minep then
       text2 = C:Red(string.format("%.4g", ep))
