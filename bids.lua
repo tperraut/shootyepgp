@@ -171,11 +171,28 @@ function sepgp_bids:CreateBidCat(cat)
   return maincat
 end
 
+local guildNameToRank = {}
+
+function sepgp_bids:initGuildNameToRank()
+  guildNameToRank = {}
+  for i = 1, GetNumGuildMembers(1) do
+    local name, rankName = GetGuildRosterInfo(i)
+    if name and rankName then
+      guildNameToRank[name] = rankName
+    end
+  end
+end
+
 function sepgp_bids:Addlines(cat, data, ep_median, pr_median)
   for i = 1, table.getn(data) do
     local name, class, ep, gp, pr, main, bid, bid_value = unpack(data[i])
+    local rankName = guildNameToRank[name]
+    if not rankName then
+      sepgp_bids:initGuildNameToRank()
+      rankName = guildNameToRank[name] or "Not Found"
+    end
     local namedesc
-    namedesc = string.format("%s", C:Colorize(BC:GetHexColor(class), name))
+    namedesc = string.format("%s(%s)", C:Colorize(BC:GetHexColor(class), name), rankName)
     local text2, text4
     if sepgp_minep > 0 and ep < sepgp_minep then
       text2 = C:Red(string.format("%.4g", ep))
