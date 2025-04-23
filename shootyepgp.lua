@@ -11,6 +11,8 @@ local T = AceLibrary("Tablet-2.0")
 local L = AceLibrary("AceLocale-2.2"):new("shootyepgp")
 sepgp.VARS = {
   basegp = 1,
+  startgp = 20,
+  basecalcgp = 9,
   minep = 0,
   baseaward_ep = 100,
   decay = 0.9,
@@ -706,7 +708,7 @@ function sepgp:delayedInit()
   self:parseVersion(sepgp._versionString)
   local major_ver = self._version.major
   if IsGuildLeader() and ((sepgp_dbver == nil) or (major_ver > sepgp_dbver)) then
-    sepgp[string.format("v%dtov%d", (sepgp_dbver or 2), major_ver)](sepgp)
+    --sepgp[string.format("v%dtov%d", (sepgp_dbver or 2), major_ver)](sepgp)
   end
   -- init options and comms
   self._options = self:buildMenu()
@@ -742,7 +744,7 @@ function sepgp:AddDataToTooltip(tooltip, itemlink, itemstring, is_master)
   else
     line_limit = 28
   end
-  local ep, gp = (self:get_ep_v3(self._playerName) or 0), (self:get_gp_v3(self._playerName) or sepgp.VARS.basegp)
+  local ep, gp = (self:get_ep_v3(self._playerName) or 0), ((self:get_gp_v3(self._playerName) or sepgp.VARS.basegp) + sepgp.VARS.basecalcgp)
   local off_price = price_os
   local pr, new_pr_all_in, new_pr_need, new_pr_min, new_pr_off = ep / gp, ep / (gp + price_allin), ep / (gp + price_need), ep / (gp + price_min), ep / (gp + off_price)
   local pr_delta_allin = new_pr_all_in - pr
@@ -1478,10 +1480,10 @@ end
 
 function sepgp:capcalc(ep, gp, gain)
   -- CAP_EP = EP_GAIN*DECAY/(1-DECAY) CAP_PR = CAP_EP/base_gp
-  local pr = ep / gp
+  local pr = ep / (gp + sepgp.VARS.basecalcgp)
   local ep_decayed = self:num_round(ep * sepgp_decay)
   local gp_decayed = math.max(sepgp.VARS.basegp, self:num_round(gp * sepgp_decay))
-  local pr_decay = tonumber(string.format("%.03f", pr)) - tonumber(string.format("%.03f", ep_decayed / gp_decayed))
+  local pr_decay = tonumber(string.format("%.03f", pr)) - tonumber(string.format("%.03f", ep_decayed / (gp_decayed + sepgp.VARS.basecalcgp)))
   if (pr_decay < 0.5) then
     pr_decay = 0
   else
@@ -1503,7 +1505,7 @@ function sepgp:my_epgp_announce(use_main)
   else
     ep, gp = (self:get_ep_v3(self._playerName) or 0), (self:get_gp_v3(self._playerName) or sepgp.VARS.basegp)
   end
-  local pr = ep / gp
+  local pr = ep / (gp + sepgp.VARS.basecalcgp)
   local msg = string.format(L["You now have: %d EP %d GP |cffffff00%.03f|r|cffff7f00PR|r."], ep, gp, pr)
   self:defaultPrint(msg)
   local pr_decay, cap_ep, cap_pr = self:capcalc(ep, gp)
@@ -1936,16 +1938,16 @@ function sepgp:captureBid(text, sender)
               bids_blacklist[sender] = true
               local table_key = "bids_main_" .. ms_bid
               if (sepgp_altspool) and (main_name) then
-                table.insert(sepgp[table_key], { name, class, ep, gp, ep / gp, main_name, ms_bid, bid_values[ms_bid] })
+                table.insert(sepgp[table_key], { name, class, ep, gp, ep / (gp + sepgp.VARS.basecalcgp), main_name, ms_bid, bid_values[ms_bid] })
               else
-                table.insert(sepgp[table_key], { name, class, ep, gp, ep / gp, "", ms_bid, bid_values[ms_bid] })
+                table.insert(sepgp[table_key], { name, class, ep, gp, ep / (gp + sepgp.VARS.basecalcgp), "", ms_bid, bid_values[ms_bid] })
               end
             elseif (oskw_found) then
               bids_blacklist[sender] = true
               if (sepgp_altspool) and (main_name) then
-                table.insert(sepgp.bids_off, { name, class, ep, gp, ep / gp, main_name })
+                table.insert(sepgp.bids_off, { name, class, ep, gp, ep / (gp + sepgp.VARS.basecalcgp), main_name })
               else
-                table.insert(sepgp.bids_off, { name, class, ep, gp, ep / gp })
+                table.insert(sepgp.bids_off, { name, class, ep, gp, ep / (gp + sepgp.VARS.basecalcgp) })
               end
             end
             sepgp_bids:Toggle(true)

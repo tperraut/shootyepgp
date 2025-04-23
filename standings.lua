@@ -117,7 +117,7 @@ function sepgp_standings:Export()
     local ep = (sepgp:get_ep_v3(name, officernote) or 0)
     local gp = (sepgp:get_gp_v3(name, officernote) or sepgp.VARS.basegp)
     if ep > 0 then
-      table.insert(t, { name, ep, gp, ep / gp })
+      table.insert(t, { name, ep, gp, ep / (gp + sepgp.VARS.basecalcgp) })
     end
   end
   table.sort(t, function(a, b)
@@ -402,10 +402,10 @@ function sepgp_standings:BuildStandingsTable(raid_only)
     if ep > 0 then
       if (only_raid) and next(r) then
         if r[name] then
-          table.insert(t, { name, class, armor_class, ep, gp, ep / gp , rankName})
+          table.insert(t, { name, class, armor_class, ep, gp, ep / (gp + sepgp.VARS.basecalcgp) , rankName})
         end
       else
-        table.insert(t, { name, class, armor_class, ep, gp, ep / gp, rankName })
+        table.insert(t, { name, class, armor_class, ep, gp, ep / (gp + sepgp.VARS.basecalcgp), rankName })
       end
     end
   end
