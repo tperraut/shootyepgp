@@ -16,7 +16,7 @@ sepgp.VARS = {
   minep = 0,
   baseaward_ep = 100,
   decay = 0.9,
-  max = 10000,
+  max = 100000,
   timeout = 60,
   minlevel = 55,
   maxloglines = 500,
@@ -208,6 +208,7 @@ sepgp.timer:SetScript("OnUpdate", function() sepgp.OnUpdate(this, arg1) end)
 sepgp.timer:SetScript("OnEvent", function()
 end)
 sepgp.alts = {}
+
 
 function sepgp:buildMenu()
   if not (options) then
@@ -808,8 +809,8 @@ function sepgp:GuildRosterSetOfficerNote(index, note, fromAddon)
     self.hooks["GuildRosterSetOfficerNote"](index, note)
   else
     local name, _, _, _, _, _, _, prevnote, _, _ = GetGuildRosterInfo(index)
-    local _, _, _, oldepgp, _ = string.find(prevnote or "", "(.*)({%d+:%d+})(.*)")
-    local _, _, _, epgp, _ = string.find(note or "", "(.*)({%d+:%d+})(.*)")
+    local _, _, _, oldepgp, _ = string.find(prevnote or "", "(.*)({%d+%.?%d*:%d+%.?%d*})(.*)")
+    local _, _, _, epgp, _ = string.find(note or "", "(.*)({%d+%.?%d*:%d+%.?%d*})(.*)")
     if (sepgp_altspool) then
       local oldmain = self:parseAlt(name, prevnote)
       local main = self:parseAlt(name, note)
@@ -827,7 +828,7 @@ function sepgp:GuildRosterSetOfficerNote(index, note, fromAddon)
         self:defaultPrint(string.format(L["|cffff0000Manually modified %s\'s note. EPGP was %s|r"], name, oldepgp))
       end
     end
-    local safenote = string.gsub(note, "(.*)({%d+:%d+})(.*)", sanitizeNote)
+    local safenote = string.gsub(note, "(.*)({%d+%.?%d*:%d+%.?%d*})(.*)", sanitizeNote)
     return self.hooks["GuildRosterSetOfficerNote"](index, safenote)
   end
 end
@@ -1199,12 +1200,12 @@ end
 function sepgp:init_notes_v3(guild_index, name, officernote)
   local ep, gp = self:get_ep_v3(name, officernote), self:get_gp_v3(name, officernote)
   if not (ep and gp) then
-    local initstring = string.format("{%d:%d}", 0, sepgp.VARS.basegp)
+    local initstring = string.format("{%.6f:%.6f}", 0, sepgp.VARS.basegp)
     local newnote = string.format("%s%s", officernote, initstring)
-    newnote = string.gsub(newnote, "(.*)({%d+:%d+})(.*)", sanitizeNote)
+    newnote = string.gsub(newnote, "(.*)({%d+%.?%d*:%d+%.?%d*})(.*)", sanitizeNote)
     officernote = newnote
   else
-    officernote = string.gsub(officernote, "(.*)({%d+:%d+})(.*)", sanitizeNote)
+    officernote = string.gsub(officernote, "(.*)({%d+%.?%d*:%d+%.?%d*})(.*)", sanitizeNote)
   end
   GuildRosterSetOfficerNote(guild_index, officernote, true)
   return officernote
@@ -1215,18 +1216,18 @@ function sepgp:update_epgp_v3(ep, gp, guild_index, name, officernote, special_ac
   local newnote
   if (ep) then
     ep = math.max(0, ep)
-    newnote = string.gsub(officernote, "(.*{)(%d+)(:)(%d+)(}.*)", function(head, oldep, divider, oldgp, tail)
+    newnote = string.gsub(officernote, "(.*{)(%d+%.?%d*)(:)(%d+%.?%d*)(}.*)", function(head, oldep, divider, oldgp, tail)
       return string.format("%s%s%s%s%s", head, ep, divider, oldgp, tail)
     end)
   end
   if (gp) then
     gp = math.max(sepgp.VARS.basegp, gp)
     if (newnote) then
-      newnote = string.gsub(newnote, "(.*{)(%d+)(:)(%d+)(}.*)", function(head, oldep, divider, oldgp, tail)
+      newnote = string.gsub(newnote, "(.*{)(%d+%.?%d*)(:)(%d+%.?%d*)(}.*)", function(head, oldep, divider, oldgp, tail)
         return string.format("%s%s%s%s%s", head, oldep, divider, gp, tail)
       end)
     else
-      newnote = string.gsub(officernote, "(.*{)(%d+)(:)(%d+)(}.*)", function(head, oldep, divider, oldgp, tail)
+      newnote = string.gsub(officernote, "(.*{)(%d+%.?%d*)(:)(%d+%.?%d*)(}.*)", function(head, oldep, divider, oldgp, tail)
         return string.format("%s%s%s%s%s", head, oldep, divider, gp, tail)
       end)
     end
@@ -1288,12 +1289,12 @@ end
 
 function sepgp:get_ep_v3(getname, officernote) -- gets ep by name or note
   if (officernote) then
-    local _, _, ep = string.find(officernote, ".*{(%d+):%d+}.*")
+    local _, _, ep = string.find(officernote, ".*{(%d+%.?%d*):%d+%.?%d*}.*")
     return tonumber(ep)
   end
   for i = 1, GetNumGuildMembers(1) do
     local name, _, _, _, class, _, note, officernote, _, _ = GetGuildRosterInfo(i)
-    local _, _, ep = string.find(officernote, ".*{(%d+):%d+}.*")
+    local _, _, ep = string.find(officernote, ".*{(%d+%.?%d*):%d+%.?%d*}.*")
     if (name == getname) then return tonumber(ep) end
   end
   return
@@ -1313,12 +1314,12 @@ end
 
 function sepgp:get_gp_v3(getname, officernote) -- gets gp by name or officernote
   if (officernote) then
-    local _, _, gp = string.find(officernote, ".*{%d+:(%d+)}.*")
+    local _, _, gp = string.find(officernote, ".*{%d+%.?%d*:(%d+%.?%d*)}.*")
     return tonumber(gp)
   end
   for i = 1, GetNumGuildMembers(1) do
     local name, _, _, _, class, _, note, officernote, _, _ = GetGuildRosterInfo(i)
-    local _, _, gp = string.find(officernote, ".*{%d+:(%d+)}.*")
+    local _, _, gp = string.find(officernote, ".*{%d+%.?%d*:(%d+%.?%d*)}.*")
     if (name == getname) then return tonumber(gp) end
   end
   return
@@ -1397,7 +1398,7 @@ function sepgp:givename_gp(getname, gp) -- assigns gp to a single character
   local newgp = gp + oldgp
   self:update_gp_v3(getname, newgp)
   self:debugPrint(string.format(L["Giving %d gp to %s%s."], gp, getname, postfix))
-  local msg = string.format(L["Awarding %d GP to %s%s. (Previous: %d, New: %d)"], gp, getname, postfix, oldgp,
+  local msg = string.format(L["Awarding %d GP to %s%s. (Previous: %0.6f, New: %0.6f)"], gp, getname, postfix, oldgp,
     math.max(sepgp.VARS.basegp, newgp))
   self:adminSay(msg)
   self:addToLog(msg)
@@ -1437,8 +1438,8 @@ function sepgp:decay_epgp_v3()
     local name, _, _, _, class, _, note, officernote, _, _ = GetGuildRosterInfo(i)
     local ep, gp = self:get_ep_v3(name, officernote), self:get_gp_v3(name, officernote)
     if (ep and gp) then
-      ep = self:num_round(ep * sepgp_decay)
-      gp = self:num_round(gp * sepgp_decay)
+      ep = ep * sepgp_decay
+      gp = gp * sepgp_decay
       self:update_epgp_v3(ep, gp, i, name, officernote)
     end
   end
@@ -2363,9 +2364,9 @@ admin = function()
 end
 
 sanitizeNote = function(prefix, epgp, postfix)
-  -- reserve 12 chars for the epgp pattern {xxxxx:yyyy} max public/officernote = 31
+  -- reserve 12 chars for the epgp pattern {xxxxx.xxxxxx:yyyy.yyyyyy} max public/officernote = 31
   local remainder = string.format("%s%s", prefix, postfix)
-  local clip = math.min(31 - 12, string.len(remainder))
+  local clip = math.min(31 - 26, string.len(remainder))
   local prepend = string.sub(remainder, 1, clip)
   return string.format("%s%s", prepend, epgp)
 end

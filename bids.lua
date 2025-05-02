@@ -195,11 +195,11 @@ function sepgp_bids:Addlines(cat, data, ep_median, pr_median)
     namedesc = string.format("%s(%s)", C:Colorize(BC:GetHexColor(class), name), rankName)
     local text2, text4
     if sepgp_minep > 0 and ep < sepgp_minep then
-      text2 = C:Red(string.format("%.4g", ep))
-      text4 = C:Red(string.format("%.4g", pr))
+      text2 = C:Red(string.format("%.6f", ep))
+      text4 = C:Red(string.format("%.6f", pr))
     else
-      text2 = string.format("%.4g", ep)
-      text4 = string.format("%.4g", pr)
+      text2 = string.format("%.6f", ep)
+      text4 = string.format("%.6f", pr)
     end
     if ep_median and ep < ep_median then
       text2 = C:Red(text2)
@@ -211,7 +211,7 @@ function sepgp_bids:Addlines(cat, data, ep_median, pr_median)
     cat:AddLine(
       "text", namedesc,
       "text2", text2,
-      "text3", string.format("%.4g", gp),
+      "text3", string.format("%.6f", gp),
       "text4", text4,
       "text5", bid_str,
       "text6", (main or ""),
@@ -266,9 +266,9 @@ function sepgp_bids:OnTooltipUpdate()
     "text4", C:Orange("PR"), "child_justify4", "RIGHT"
   ):AddLine(
     "text", "",
-    "text2", C:White(string.format("%d", ep_median)),
-    "text3", C:White(string.format("%d", sepgp:calculateMedian(raid_table, 5))),
-    "text4", C:White(string.format("%.4g", sepgp:calculateMedian(raid_table, 6)))
+    "text2", C:White(string.format("%.6f", ep_median)),
+    "text3", C:White(string.format("%.6f", sepgp:calculateMedian(raid_table, 5))),
+    "text4", C:White(string.format("%.6f", sepgp:calculateMedian(raid_table, 6)))
   )
 
   local tm_min, tm_need, tm_allin = self:BuildBidsTable()
@@ -305,16 +305,16 @@ function sepgp_bids:OnTooltipUpdate()
     end
     local text2, text4
     if sepgp_minep > 0 and ep < sepgp_minep then
-      text2 = C:Red(string.format("%.4g", ep))
-      text4 = C:Red(string.format("%.4g", pr))
+      text2 = C:Red(string.format("%.6f", ep))
+      text4 = C:Red(string.format("%.6f", pr))
     else
-      text2 = string.format("%.4g", ep)
-      text4 = string.format("%.4g", pr)
+      text2 = string.format("%.6f", ep)
+      text4 = string.format("%.6f", pr)
     end
     offcat:AddLine(
       "text", namedesc,
       "text2", text2,
-      "text3", string.format("%.4g", gp),
+      "text3", string.format("%.6f", gp),
       "text4", text4,
       "text5", (main or ""),
       "func", "announceWinnerOS", "arg1", self, "arg2", name, "arg3", pr

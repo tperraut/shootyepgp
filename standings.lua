@@ -126,7 +126,7 @@ function sepgp_standings:Export()
   shooty_export:Show()
   local txt = "Name;EP;GP;PR\n"
   for i, val in ipairs(t) do
-    txt = string.format("%s%s;%d;%d;%.4f\n", txt, val[1], val[2], val[3], val[4])
+    txt = string.format("%s%s;%.6f;%.6f;%.6f\n", txt, val[1], val[2], val[3], val[4])
   end
   shooty_export.AddSelectText(txt)
 end
@@ -447,9 +447,9 @@ function sepgp_standings:OnTooltipUpdate()
   local medianCat = T:AddCategory(
     "columns", 4,
     "text", C:Gold(L["Median"]), "child_justify", "LEFT",
-    "text2", C:White(string.format("%d", sepgp:calculateMedian(t, 4))), "child_justify2", "RIGHT",
-    "text3", C:White(string.format("%d", sepgp:calculateMedian(t, 5))), "child_justify3", "RIGHT",
-    "text4", C:White(string.format("%.4g", sepgp:calculateMedian(t, 6))), "child_justify4", "RIGHT"
+    "text2", C:White(string.format("%.6f", sepgp:calculateMedian(t, 4))), "child_justify2", "RIGHT",
+    "text3", C:White(string.format("%.6f", sepgp:calculateMedian(t, 5))), "child_justify3", "RIGHT",
+    "text4", C:White(string.format("%.6f", sepgp:calculateMedian(t, 6))), "child_justify4", "RIGHT"
   )
 
   medianCat:AddLine(
@@ -503,18 +503,18 @@ function sepgp_standings:OnTooltipUpdate()
     local text = C:Colorize(BC:GetHexColor(class), name) .. " (" .. rank .. ")"
     local text2, text4
     if sepgp_minep > 0 and ep < sepgp_minep then
-      text2 = C:Red(string.format("%.4g", ep))
-      text4 = C:Red(string.format("%.4g", pr))
+      text2 = C:Red(string.format("%.6f", ep))
+      text4 = C:Red(string.format("%.6f", pr))
     else
-      text2 = string.format("%.4g", ep)
-      text4 = string.format("%.4g", pr)
+      text2 = string.format("%.6f", ep)
+      text4 = string.format("%.6f", pr)
     end
-    local text3 = string.format("%.4g", gp)
+    local text3 = string.format("%.6f", gp)
     if ((sepgp._playerName) and sepgp._playerName == name) or ((sepgp_main) and sepgp_main == name) then
       text = string.format("(*)%s", text)
       local pr_decay = sepgp:capcalc(ep, gp)
       if pr_decay < 0 then
-        text4 = string.format("%s(|cffff0000%.4g|r)", text4, pr_decay)
+        text4 = string.format("%s(|cffff0000%.6f|r)", text4, pr_decay)
       end
     end
     cat:AddLine(
